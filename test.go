@@ -1,10 +1,10 @@
 package main
 
 import (
-    "fmt"
-    "html"
-    "log"
-    "net/http"
+	"fmt"
+	"html"
+	"log"
+	"net/http"
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/shurcooL/github_flavored_markdown/gfmstyle"
 	"io"
