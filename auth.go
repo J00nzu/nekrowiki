@@ -13,41 +13,46 @@ type sessionData struct{
 	authenticated bool
 }
 
-func NewSessionData() sessionData {
+func NewSessionData() *sessionData {
 	sessData := sessionData{}
 	sessData.lastUsed = time.Now()
 	sessData.authenticated = false
-	return sessData
+	return &sessData
 }
 
-var sessions map[string]sessionData = make(map[string]sessionData)
+var sessions map[string]*sessionData = make(map[string]*sessionData)
 var ssMutex = sync.Mutex{}
 var lastSessionStoreClean = time.Now()
 
 const sessionExpirationTime = time.Minute
 const sessionStoreCleanInterval = time.Minute/2
 
-func createSessionCookie(w http.ResponseWriter) http.Cookie{
+func createSessionCookie(w http.ResponseWriter) *sessionData{
 
 	sesID := uniuri.NewLen(32)
 
 	sessionCookie := http.Cookie{Name: "session", Value: sesID}
 
+	data := NewSessionData()
+
 	ssMutex.Lock()
-	sessions[sesID] = NewSessionData()
+	sessions[sesID] = data
 	ssMutex.Unlock()
 
 
 	http.SetCookie(w, &sessionCookie)
 
-	return sessionCookie
+	return data
 }
+
 
 func cleanSessionStore(){
 
 	if lastSessionStoreClean.Add(sessionStoreCleanInterval).After(time.Now()) {
 		return
 	}
+
+	lastSessionStoreClean = time.Now()
 
 	ssMutex.Lock()
 
@@ -63,15 +68,31 @@ func cleanSessionStore(){
 	log.Println("cleanup complete...")
 	log.Println(sessions)
 
-	lastSessionStoreClean = time.Now()
 	ssMutex.Unlock()
 }
 
-func isSessionValid(session string) (sessionData, bool) {
+func getSessionCookie (w http.ResponseWriter, r *http.Request) *sessionData {
+	sessionCookie, err := r.Cookie("session")
+
+	if(err != nil){
+
+		return createSessionCookie(w)
+
+	}else{
+		if val, ok := isSessionValid(sessionCookie.Value); ok{
+			return val
+		}else{
+			log.Println("Invalid session. Issuing new session cookie")
+			return createSessionCookie(w)
+		}
+	}
+}
+
+func isSessionValid(session string) (*sessionData, bool) {
 	cleanSessionStore()
 
 	ssMutex.Lock()
-	returnVal := sessionData{authenticated:false}
+	returnVal := &sessionData{authenticated:false}
 	valid := false
 
 	if val, ok := sessions[session]; ok {
@@ -82,13 +103,10 @@ func isSessionValid(session string) (sessionData, bool) {
 			valid = true
 
 		}else{
-			log.Printf("Session %s has expired. creating blank session data.", session)
-
-			sessions[session] = NewSessionData()
+			log.Printf("Session %s has expired.", session)
 		}
 	}else{
-		log.Printf("Session %s not found. creating blank session data.", session)
-		sessions[session] = NewSessionData()
+		log.Printf("Session %s not found.", session)
 	}
 
 	ssMutex.Unlock()
@@ -106,6 +124,9 @@ func redirectLogin(w http.ResponseWriter, r *http.Request){
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Print("login request")
+	log.Print(r)
+
 	switch r.Method {
 	//GET displays the upload form.
 	case "GET":
@@ -114,21 +135,58 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 			if(token.Value=="Authorized"){
 
+				getSessionCookie(w,r).authenticated = true
+
 				redirect, err := r.Cookie("afterLogin")
 				//Redirect out of login
 				if(err == nil){
+					redirect.Expires = time.Now().Add(- time.Hour*24)
+					r.AddCookie(redirect) //Expire the cookie immediately
+
 					http.Redirect(w,r, redirect.Value, http.StatusTemporaryRedirect)
+					log.Printf("redirecting to: %s ", redirect.Value)
 				}else{
 					http.Redirect(w,r, "/", http.StatusTemporaryRedirect)
+					log.Printf("redirecting to index.html")
 				}
 
 				return;
 			}
 		}
+		log.Print("Serving html/login.html")
 
 		http.ServeFile(w, r, "html/login.html")
-	case "POST":
 
+	case "POST":
+		log.Print("login POST")
+		err := r.ParseForm()
+		if(err!=nil){
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		form := r.Form
+		user := form.Get("username")
+		pass := form.Get("password")
+
+		if(user == "user" && pass == "pass"){
+
+			getSessionCookie(w,r).authenticated = true
+
+			redirect, err := r.Cookie("afterLogin")
+			//Redirect out of login
+			if(err == nil){
+				redirect.Expires = time.Now().Add(- time.Hour*24)
+				r.AddCookie(redirect) //Expire the cookie immediately
+
+				http.Redirect(w,r, redirect.Value, http.StatusTemporaryRedirect)
+				log.Printf("redirecting to: %s ", redirect.Value)
+			}else{
+				http.Redirect(w,r, "/", http.StatusTemporaryRedirect)
+				log.Printf("redirecting to index.html")
+			}
+
+		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -137,27 +195,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 //Authentication Middleware
 func authMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionCookie, err := r.Cookie("session")
 
-		if(err != nil){
-			log.Println(err)
+		cookie := getSessionCookie(w,r)
 
-			//set session cookie
-			createSessionCookie(w)
-
-			redirectLogin(w, r)
-
-			return
-		}
-
-		log.Println(sessionCookie)
-
-		if val, ok := isSessionValid(sessionCookie.Value); ok && val.authenticated{
+		if(cookie.authenticated){
 			log.Println("Authenticated")
 			next.ServeHTTP(w, r)
 		}else{
 			log.Println("Unauthenticated")
-
 			redirectLogin(w, r)
 		}
 
