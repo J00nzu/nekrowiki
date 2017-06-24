@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" />
+	<link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" />
+	<title>%NAME%</title>
+	<script src="//code.jquery.com/jquery-1.9.1.js"></script>
+    <script type="text/javascript">
+        function submitForm() {
+            console.log("submit event");
+            var fd = new FormData(document.getElementById("fileinfo"));
+            fd.append("label", "WEBUPLOAD");
+            $.ajax({
+              url: "/upload",
+              type: "POST",
+              data: fd,
+              processData: false,
+              contentType: false
+            }).done(function( data ) {
+                console.log("Output: ");
+                console.log( data );
+            });
+            return false;
+        }
+    </script>
+</head>
+
+<body>
+	<center>
+		<h2>Upload stuff:</h2>
+		<form method="post" id="fileinfo" name="fileinfo" onsubmit="return submitForm();">
+			<label>Select a file:</label><br>
+			<input type="file" name="file" multiple="multiple" required />
+			<input type="submit" value="Upload" />
+		</form>
+	</center>
+	<article class="markdown-body entry-content" style="padding: 30px;">
+
+	%MARKDOWN%
+
+	</article>
+</body>
+</html>
