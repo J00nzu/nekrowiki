@@ -15,6 +15,7 @@ import (
 	//"bytes"
 )
 
+
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	//GET displays the upload form.
@@ -80,9 +81,10 @@ func main() {
 	wikibase := string(wikibase_b)
 	
 	fs := http.FileServer(http.Dir("public_html"))
-	http.Handle("/", fs)
+	http.Handle("/", authMW(fs))
 	
 	http.HandleFunc("/upload", uploadHandler)
+	http.HandleFunc("/login", loginHandler)
 
 
     http.HandleFunc("/md/", func(w http.ResponseWriter, request *http.Request) {
