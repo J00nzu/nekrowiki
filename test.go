@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"html"
+	//"html"
 	"log"
 	"net/http"
 	"github.com/shurcooL/github_flavored_markdown"
