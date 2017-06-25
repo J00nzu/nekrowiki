@@ -1,5 +1,7 @@
 # Hello
 
+<img src="/uploads/bsglogo3.png" width="200"> </img>
+
 What the fuck
 
 ハオ・ドス・ジュニコード・ワーク 
@@ -58,5 +60,3 @@ __This will also be bold__
 _You **can** combine them_
 
 This_Should_Work_Too
-
-![TEST IMAGE](/uploads/bsglogo3.png)
