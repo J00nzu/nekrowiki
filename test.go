@@ -22,7 +22,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	//GET displays the upload form.
 	case "GET":
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		
 	//POST takes the uploaded file(s) and saves it to disk.
 	case "POST":
@@ -110,7 +110,7 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func main_start(args []string) {
+func _start(args []string) {
 	fs := http.FileServer(http.Dir("public_html"))
 	http.Handle("/", authMW(fs))
 
@@ -128,19 +128,19 @@ func main_start(args []string) {
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
 
-func main_stop(args []string) {
+func _stop(args []string) {
 	fmt.Print("Not implemented")
 }
 
-func main_restart(args []string) {
+func _restart(args []string) {
 	fmt.Print("Not implemented")
 }
 
-func main_config(args []string) {
+func _config(args []string) {
 	fmt.Print("Not implemented")
 }
 
-func main_help() {
+func _help() {
 	fmt.Print("Usage: \n$./nekrowiki start")
 }
 
@@ -149,7 +149,7 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		main_help()
+		_help()
 		return
 	} else {
 		function := args[0]
@@ -164,15 +164,15 @@ func main() {
 
 		switch function {
 		case "start":
-			main_start(additional_args)
+			_start(additional_args)
 		case "stop":
-			main_stop(additional_args)
+			_stop(additional_args)
 		case "restart":
-			main_restart(additional_args)
+			_restart(additional_args)
 		case "config":
-			main_config(additional_args)
+			_config(additional_args)
 		default:
-			main_help()
+			_help()
 		}
 
 	}
