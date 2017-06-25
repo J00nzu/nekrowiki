@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	/*
 	"github.com/shurcooL/github_flavored_markdown"
 	"github.com/shurcooL/github_flavored_markdown/gfmstyle"
+	*/
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
 	"io"
 	"io/ioutil"
 	"strings"
     "os"
+	"regexp"
 )
 
 
@@ -87,7 +92,12 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 		fmt.Print("\n")
 	} else {
 
-		complete := strings.Replace(wikibase, "%MARKDOWN%", string(github_flavored_markdown.Markdown(markdown)), -1)
+		unsafe := blackfriday.MarkdownCommon(markdown)
+		p := bluemonday.UGCPolicy()
+		p.AllowAttrs("class").Matching(regexp.MustCompile("^language-[a-zA-Z0-9]+$")).OnElements("code")
+		html := p.SanitizeBytes(unsafe)
+
+		complete := strings.Replace(wikibase, "%MARKDOWN%", string(html), -1)
 		complete = strings.Replace(complete, "%NAME%", url, -1)
 
 		w.Write([]byte(complete))
@@ -100,11 +110,12 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func main() {
-
+func main_start(args []string) {
 	fs := http.FileServer(http.Dir("public_html"))
 	http.Handle("/", authMW(fs))
-	http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
+
+	//http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
+
 	http.HandleFunc("/login", loginHandler)
 
 	ufs := http.FileServer(http.Dir("uploads"))
@@ -113,7 +124,57 @@ func main() {
 	http.Handle("/upload", authMW(http.HandlerFunc(uploadHandler)))
 	http.Handle("/md/", authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler))))
 
-
 	log.Println("Listening...")
-    log.Fatal(http.ListenAndServe(":8081", nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
+}
+
+func main_stop(args []string) {
+	fmt.Print("Not implemented")
+}
+
+func main_restart(args []string) {
+	fmt.Print("Not implemented")
+}
+
+func main_config(args []string) {
+	fmt.Print("Not implemented")
+}
+
+func main_help() {
+	fmt.Print("Usage: \n$./nekrowiki start")
+}
+
+func main() {
+
+	args := os.Args[1:]
+
+	if len(args) == 0 {
+		main_help()
+		return
+	} else {
+		function := args[0]
+
+		var additional_args []string
+
+		if len(args) > 1 {
+			additional_args = args[1:]
+		} else {
+			additional_args = make([]string, 0)
+		}
+
+		switch function {
+		case "start":
+			main_start(additional_args)
+		case "stop":
+			main_stop(additional_args)
+		case "restart":
+			main_restart(additional_args)
+		case "config":
+			main_config(additional_args)
+		default:
+			main_help()
+		}
+
+	}
+
 }
