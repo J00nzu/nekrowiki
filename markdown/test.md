@@ -14,35 +14,32 @@ First Header | Second Header
 Content from cell 1 | Content from cell 2
 Content in the first column | Content in the second column
 
-``` Java
+```C++
+#include <iostream>
+#include <vector>
+#include <stdexcept>
 
-/******************************************************************************
- *  Compilation:  javac HelloWorld.java
- *  Execution:    java HelloWorld
- *
- *  Prints "Hello, World". By tradition, this is everyone's first program.
- *
- *  % java HelloWorld
- *  Hello, World
- *
- *  These 17 lines of text are comments. They are not part of the program;
- *  they serve to remind us about its properties. The first two lines tell
- *  us what to type to compile and test the program. The next line describes
- *  the purpose of the program. The next few lines give a sample execution
- *  of the program and the resulting output. We will always include such 
- *  lines in our programs and encourage you to do the same.
- *
- ******************************************************************************/
-
-public class HelloWorld {
-
-    public static void main(String[] args) {
-        // Prints "Hello, World" to the terminal window.
-        System.out.println("Hello, World");
+int main() {
+    try {
+        std::vector<int> vec{3,4,3,1};
+        int i{vec.at(4)}; // Throws an exception, std::out_of_range (indexing for vec is from 0-3 not 1-4)
     }
 
-}
+    // An exception handler, catches std::out_of_range, which is thrown by vec.at(4)
+    catch (std::out_of_range& e) {
+        std::cerr << "Accessing a non-existent element: " << e.what() << '\n';
+    }
 
+    // To catch any other standard library exceptions (they derive from std::exception)
+    catch (std::exception& e) {
+        std::cerr << "Exception thrown: " << e.what() << '\n';
+    }
+
+    // Catch any unrecognised exceptions (i.e. those which don't derive from std::exception)
+    catch (...) {
+        std::cerr << "Some fatal error\n";
+    }
+}
 ```
 
 
@@ -60,5 +57,6 @@ __This will also be bold__
 
 _You **can** combine them_
 
+This_Should_Work_Too
 
 ![TEST IMAGE](/uploads/bsglogo3.png)
