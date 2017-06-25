@@ -27,9 +27,6 @@ var sessions map[string]*sessionData = make(map[string]*sessionData)
 var ssMutex = sync.Mutex{}
 var lastSessionStoreClean = time.Now()
 
-const sessionExpirationTime = time.Minute
-const sessionStoreCleanInterval = time.Minute/2
-
 func createSessionCookie(w http.ResponseWriter) *sessionData{
 
 	sesID := uniuri.NewLen(32)
@@ -51,7 +48,7 @@ func createSessionCookie(w http.ResponseWriter) *sessionData{
 
 func cleanSessionStore(){
 
-	if lastSessionStoreClean.Add(sessionStoreCleanInterval).After(time.Now()) {
+	if lastSessionStoreClean.Add(config.sessionStoreCleanInterval).After(time.Now()) {
 		return
 	}
 
@@ -63,7 +60,7 @@ func cleanSessionStore(){
 	log.Println(sessions)
 
 	for k, v := range sessions {
-		if v.lastUsed.Add(sessionExpirationTime).Before(time.Now()) {
+		if v.lastUsed.Add(config.sessionExpirationTime).Before(time.Now()) {
 			delete(sessions, k)
 		}
 	}
@@ -99,7 +96,7 @@ func isSessionValid(session string) (*sessionData, bool) {
 	valid := false
 
 	if val, ok := sessions[session]; ok {
-		if val.lastUsed.Add(sessionExpirationTime).After(time.Now()) {
+		if val.lastUsed.Add(config.sessionExpirationTime).After(time.Now()) {
 
 			val.lastUsed = time.Now() //Update last used time
 			returnVal = val
@@ -150,8 +147,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
 					log.Printf("redirecting to: %s ", redirect.Value)
 				}else{
-					http.Redirect(w, r, "/", http.StatusSeeOther)
-					log.Printf("redirecting to index.html")
+					http.Redirect(w, r, config.homePage, http.StatusSeeOther)
+					log.Printf("redirecting to %s", config.homePage)
 				}
 
 				return;
@@ -188,8 +185,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
 				log.Printf("redirecting to: %s ", redirect.Value)
 			}else{
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				log.Printf("redirecting to index.html")
+				http.Redirect(w, r, config.homePage, http.StatusSeeOther)
+				log.Printf("redirecting to %s", config.homePage)
 			}
 
 		} else if (user == "" && pass == "") {

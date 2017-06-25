@@ -8,7 +8,65 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"regexp"
 	"strings"
+	"io"
+	"log"
+	"bytes"
 )
+
+func getNavBarFolder(folder string) string {
+
+	buf := bytes.NewBufferString("<ul>")
+
+	dir, err := ioutil.ReadDir("markdown/" + folder)
+
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+
+	for _, file := range dir {
+		if (file.IsDir()) {
+			dirPath := folder + file.Name() + "/"
+			fmt.Fprintf(buf, "<li>%s</li>%s", file.Name(), getNavBarFolder(dirPath))
+		} else if strings.HasSuffix(file.Name(), ".md") {
+			name := strings.Replace(file.Name(), ".md", "", 1)
+
+			fmt.Fprint(buf, "<li>")
+			fmt.Fprintf(buf, "<a href=\"/md/%s%s\">", folder, name)
+			fmt.Fprintf(buf, "%s", name)
+			fmt.Fprint(buf, "</a>")
+			fmt.Fprint(buf, "</li>")
+		}
+	}
+
+	fmt.Fprint(buf, "</ul>")
+
+	return buf.String()
+}
+
+func getNavBar() string {
+	return getNavBarFolder("")
+}
+
+func homepageHandler(w http.ResponseWriter, r *http.Request) {
+	homebase_b, err := ioutil.ReadFile("html/home.html")
+
+	if (err != nil) {
+
+		log.Printf("Can't load html/home.html\n %s", err)
+
+		io.WriteString(w, "Internal Server error")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	homebase_s := string(homebase_b)
+
+	complete := strings.Replace(homebase_s, "%NAV%", getNavBar(), -1)
+	complete = strings.Replace(complete, "%NAME%", r.URL.Path, -1)
+
+	w.Write([]byte(complete))
+}
 
 func markdownHandler(w http.ResponseWriter, request *http.Request) {
 
@@ -18,6 +76,8 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 		fmt.Print("Can't load html/wikipage.html\n")
 		fmt.Print(err)
 		fmt.Print("\n")
+		io.WriteString(w, "Internal Server error")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -41,6 +101,7 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 		html := p.SanitizeBytes(unsafe)
 
 		complete := strings.Replace(wikibase, "%MARKDOWN%", string(html), -1)
+		complete = strings.Replace(complete, "%NAV%", getNavBar(), -1)
 		complete = strings.Replace(complete, "%NAME%", url, -1)
 
 		w.Write([]byte(complete))
