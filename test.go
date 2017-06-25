@@ -15,6 +15,8 @@ import (
 	"strings"
     "os"
 	"regexp"
+	"net/http/httptest"
+	"strconv"
 )
 
 
@@ -22,7 +24,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	//GET displays the upload form.
 	case "GET":
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.NotFound(w, r)
 		
 	//POST takes the uploaded file(s) and saves it to disk.
 	case "POST":
@@ -67,6 +69,65 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ModifierMiddleware struct {
+	handler http.Handler
+}
+
+func (m *ModifierMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rec := httptest.NewRecorder()
+	// passing a ResponseRecorder instead of the original RW
+	m.handler.ServeHTTP(rec, r)
+	// after this finishes, we have the response recorded
+	// and can modify it before copying it to the original RW
+
+}
+
+func customErrorMW(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		rec := httptest.NewRecorder()
+		// passing a ResponseRecorder instead of the original RW
+		next.ServeHTTP(rec, r)
+
+		if rec.Code >= 400 { // check if code is an error
+			dir, err := ioutil.ReadDir("errorpages")
+
+			if (err == nil) {
+				for _, file := range dir {
+					log.Print(file.Name())
+					if strings.HasPrefix(file.Name(), strconv.Itoa(rec.Code)) {
+
+						errorRec := httptest.NewRecorder()
+						http.ServeFile(errorRec, r, "errorpages/"+file.Name())
+
+						for k, v := range errorRec.Header() {
+							w.Header()[k] = v
+						}
+						w.WriteHeader(rec.Code) // change the code of custom page to our original error code
+						w.Write(errorRec.Body.Bytes())
+
+						return;
+					}
+				}
+			} else {
+				log.Print("Can't find folder called 'errorpages'")
+			}
+		}
+
+		// we copy the original headers first
+		for k, v := range rec.Header() {
+			w.Header()[k] = v
+		}
+
+		// write the correct http code
+		w.WriteHeader(rec.Code)
+
+		// then write out the original body
+		w.Write(rec.Body.Bytes())
+
+	})
+}
+
 func markdownHandler(w http.ResponseWriter, request *http.Request) {
 
 	wikibase_b, err := ioutil.ReadFile("html/wikipage.html")
@@ -87,7 +148,7 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 	markdown, err := ioutil.ReadFile("markdown" + url + ".md")
 
 	if err != nil {
-		io.WriteString(w, "an error has occurred.")
+		http.NotFound(w, request)
 		fmt.Print(err)
 		fmt.Print("\n")
 	} else {
@@ -112,17 +173,17 @@ func markdownHandler(w http.ResponseWriter, request *http.Request) {
 
 func _start(args []string) {
 	fs := http.FileServer(http.Dir("public_html"))
-	http.Handle("/", authMW(fs))
+	http.Handle("/", customErrorMW(authMW(fs)))
 
 	//http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
 
-	http.HandleFunc("/login", loginHandler)
+	http.Handle("/login", customErrorMW(http.HandlerFunc(loginHandler)))
 
 	ufs := http.FileServer(http.Dir("uploads"))
-	http.Handle("/uploads/", authMW(http.StripPrefix("/uploads", ufs)))
+	http.Handle("/uploads/", customErrorMW(authMW(http.StripPrefix("/uploads", ufs))))
 
-	http.Handle("/upload", authMW(http.HandlerFunc(uploadHandler)))
-	http.Handle("/md/", authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler))))
+	http.Handle("/upload", customErrorMW(authMW(http.HandlerFunc(uploadHandler))))
+	http.Handle("/md/", customErrorMW(authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler)))))
 
 	log.Println("Listening...")
 	log.Fatal(http.ListenAndServe(":8081", nil))
