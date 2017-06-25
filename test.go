@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"html"
 	"log"
 	"net/http"
 	"github.com/shurcooL/github_flavored_markdown"
@@ -11,8 +10,6 @@ import (
 	"io/ioutil"
 	"strings"
     "os"
-	//"html/template"
-	//"bytes"
 )
 
 
@@ -65,66 +62,58 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-func main() {
+func markdownHandler(w http.ResponseWriter, request *http.Request) {
 
 	wikibase_b, err := ioutil.ReadFile("html/wikipage.html")
-	
-	
+
 	if(err != nil){
 		fmt.Print("Can't load html/wikipage.html\n")
 		fmt.Print(err)
 		fmt.Print("\n")
 		return
 	}
-	
+
 	wikibase := string(wikibase_b)
-	
-	fs := http.FileServer(http.Dir("public_html"))
-	http.Handle("/", authMW(fs))
-	
-	http.HandleFunc("/upload", uploadHandler)
-	http.HandleFunc("/login", loginHandler)
 
+	//url := strings.Replace(request.URL.Path, "/md", "", 1)
 
-    http.HandleFunc("/md/", func(w http.ResponseWriter, request *http.Request) {
-		url := strings.Replace(request.URL.Path, "/md", "", 1)
-		
-		markdown, err := ioutil.ReadFile("markdown"+ url +".md")
-		
-		if err != nil {
-			io.WriteString(w, "an error has occurred.")
-			fmt.Print(err)
-			fmt.Print("\n")
-		}else{
-		
-			complete := strings.Replace(wikibase, "%MARKDOWN%", string(github_flavored_markdown.Markdown(markdown)), -1)
-			complete = strings.Replace(complete, "%NAME%", url, -1)
+	url := request.URL.Path
 
-			w.Write([]byte(complete))
-			
-			/*
-			io.WriteString(w, `<html><head><meta charset="utf-8"><link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" /><link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" /></head><body><article class="markdown-body entry-content" style="padding: 30px;">`)
-			w.Write(github_flavored_markdown.Markdown(markdown))
-			io.WriteString(w, `</article></body></html>`)
-			*/
-		}
-    })
-	
-	
-	http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
-	
-	//markdown := []byte("# GitHub Flavored Markdown\n\nHello.")
-	
-	/*
-	http.HandleFunc("/mdtest", func(w http.ResponseWriter, r *http.Request){
-        io.WriteString(w, `<html><head><meta charset="utf-8"><link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" /><link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" /></head><body><article class="markdown-body entry-content" style="padding: 30px;">`)
+	markdown, err := ioutil.ReadFile("markdown" + url + ".md")
+
+	if err != nil {
+		io.WriteString(w, "an error has occurred.")
+		fmt.Print(err)
+		fmt.Print("\n")
+	} else {
+
+		complete := strings.Replace(wikibase, "%MARKDOWN%", string(github_flavored_markdown.Markdown(markdown)), -1)
+		complete = strings.Replace(complete, "%NAME%", url, -1)
+
+		w.Write([]byte(complete))
+
+		/*
+		io.WriteString(w, `<html><head><meta charset="utf-8"><link href="/assets/gfm.css" media="all" rel="stylesheet" type="text/css" /><link href="//cdnjs.cloudflare.com/ajax/libs/octicons/2.1.2/octicons.css" media="all" rel="stylesheet" type="text/css" /></head><body><article class="markdown-body entry-content" style="padding: 30px;">`)
 		w.Write(github_flavored_markdown.Markdown(markdown))
 		io.WriteString(w, `</article></body></html>`)
-    })
-	*/
-	
+		*/
+	}
+}
+
+func main() {
+
+	fs := http.FileServer(http.Dir("public_html"))
+	http.Handle("/", authMW(fs))
+	http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
+	http.HandleFunc("/login", loginHandler)
+
+	ufs := http.FileServer(http.Dir("uploads"))
+	http.Handle("/uploads/", authMW(http.StripPrefix("/uploads", ufs)))
+
+	http.Handle("/upload", authMW(http.HandlerFunc(uploadHandler)))
+	http.Handle("/md/", authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler))))
+
+
 	log.Println("Listening...")
     log.Fatal(http.ListenAndServe(":8081", nil))
-
 }

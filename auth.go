@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-var unAuthenticatedURLS = []string{"*.css", "*.js", "*.ico", "*.png", "*.gif", "*.jpg", "*.jpeg", "/login*", "*robots.txt"}
+var unAuthenticatedURLS = []string{"favicon.ico", "/login", "*robots.txt"}
 
 type sessionData struct{
 	lastUsed time.Time
@@ -173,8 +173,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		form := r.Form
 		user := form.Get("username")
 		pass := form.Get("password")
-
-		log.Printf("user: %s, pass: %s", user, pass)
 
 		if(user == "user" && pass == "pass"){
 
