@@ -1,6 +1,6 @@
 # Hello
 
-<img src="/uploads/bsglogo3.png" width="200"> </img>
+<img src="/uploads/paint.png" width="500"> </img>
 
 What the fuck
 
