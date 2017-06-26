@@ -202,6 +202,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	getSessionCookie(w, r).authenticated = false
+	// TODO: Delete token as well
+
+	http.ServeFile(w, r, "html/logout.html")
+}
+
 func matchesAny(str string, pattern []string) bool {
 
 	for _, patrn := range pattern {

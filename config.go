@@ -14,7 +14,7 @@ type configValues struct {
 var config = InitializeConfig()
 
 func InitializeConfig() configValues {
-	fmt.Print("Initializing configs")
+	fmt.Print("Initializing configs\n")
 
 	values := configValues{}
 	values.homePage = "/home"
