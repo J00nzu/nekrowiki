@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit</title>
+
+    <script src="//code.jquery.com/jquery-1.9.1.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+<h1>Edit</h1>
+
+
+<form method="POST" name="saveform" id="saveform" onsubmit="return submitForm();">
+    <textarea id="editarea" name="editarea"></textarea>
+    <button type="submit">save</button>
+</form>
+
+
+<script type="text/javascript">
+    function submitForm() {
+        console.log("submit event");
+        var fd = document.getElementById("saveform")
+        fd.append("label", "WEBUPLOAD");
+        $.ajax({
+            url: document.URL,
+            type: "POST",
+            data: fd,
+            processData: false,
+            contentType: false
+        }).done(function (data) {
+            console.log("Output: ");
+            console.log(data);
+        });
+        return false;
+    }
+</script>
+<script>
+    var simplemde = new SimpleMDE({
+        autofocus: true,
+        forceSync: true,
+        element: document.getElementById("editarea"),
+        hideIcons: ["guide"],
+        indentWithTabs: true,
+        initialValue: "",
+        insertTexts: {
+            horizontalRule: ["", "\n\n-----\n\n"],
+            image: ["![](", ")"],
+            link: ["[", "](http://)"],
+            table: ["", "\n\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Text     | Text      | Text     |\n\n"],
+        },
+        placeholder: "Type here...",
+        showIcons: ["code", "table"],
+        spellChecker: false,
+        status: false,
+        status: ["lines", "words", "cursor"], // Another optional usage, with a custom status bar item that counts keystrokes
+    });
+</script>
+</body>
+</html>

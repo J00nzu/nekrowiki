@@ -68,6 +68,40 @@ func homepageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(complete))
 }
 
+func editHandler(w http.ResponseWriter, r *http.Request) {
+
+	switch r.Method {
+	case "GET":
+		url := r.URL.Path
+
+		markdown, err := ioutil.ReadFile("markdown" + url + ".md")
+
+		if err != nil {
+			markdown = []byte("")
+		}
+
+		strings.Compare(string(markdown), string(markdown));
+		http.ServeFile(w, r, "html/edit.html")
+
+	case "POST":
+		log.Print(r)
+		log.Print(r.Body)
+
+		err := r.ParseForm()
+		if (err != nil) {
+			log.Print(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		log.Print(r.Form)
+
+		w.WriteHeader(http.StatusAccepted)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 func markdownHandler(w http.ResponseWriter, request *http.Request) {
 
 	wikibase_b, err := ioutil.ReadFile("html/wikipage.html")

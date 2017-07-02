@@ -17,6 +17,8 @@ func _start(args []string) {
 	//http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
 
 	http.Handle("/login", customErrorMW(http.HandlerFunc(loginHandler)))
+	http.Handle("/logout", customErrorMW(http.HandlerFunc(logoutHandler)))
+
 	http.Handle(config.HomePage, customErrorMW(authMW(http.HandlerFunc(homepageHandler))))
 
 	ufs := http.FileServer(http.Dir("uploads"))
@@ -24,6 +26,8 @@ func _start(args []string) {
 
 	http.Handle("/upload", customErrorMW(authMW(http.HandlerFunc(uploadHandler))))
 	http.Handle("/md/", customErrorMW(authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler)))))
+	http.Handle("/edit/", customErrorMW(authMW(http.StripPrefix("/edit", http.HandlerFunc(editHandler)))))
+
 
 	log.Println("Listening...")
 	log.Fatal(http.ListenAndServe(":8081", nil))
