@@ -15,6 +15,7 @@ type configValues struct {
 	SessionExpirationTime     time.Duration
 	SessionStoreCleanInterval time.Duration
 	AllowedQuestAccess        bool
+	DatabaseURL               string
 }
 
 var config = DefaultConfig()
@@ -27,6 +28,7 @@ func DefaultConfig() configValues {
 	values.SessionExpirationTime = time.Hour
 	values.SessionStoreCleanInterval = time.Hour
 	values.AllowedQuestAccess = false;
+	values.DatabaseURL = "127.0.0.1:27017"
 
 	return values
 }
