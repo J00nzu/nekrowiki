@@ -48,7 +48,7 @@ func createSessionCookie(w http.ResponseWriter) *sessionData{
 
 func cleanSessionStore(){
 
-	if lastSessionStoreClean.Add(config.sessionStoreCleanInterval).After(time.Now()) {
+	if lastSessionStoreClean.Add(config.SessionStoreCleanInterval).After(time.Now()) {
 		return
 	}
 
@@ -60,7 +60,7 @@ func cleanSessionStore(){
 	log.Println(sessions)
 
 	for k, v := range sessions {
-		if v.lastUsed.Add(config.sessionExpirationTime).Before(time.Now()) {
+		if v.lastUsed.Add(config.SessionExpirationTime).Before(time.Now()) {
 			delete(sessions, k)
 		}
 	}
@@ -96,7 +96,7 @@ func isSessionValid(session string) (*sessionData, bool) {
 	valid := false
 
 	if val, ok := sessions[session]; ok {
-		if val.lastUsed.Add(config.sessionExpirationTime).After(time.Now()) {
+		if val.lastUsed.Add(config.SessionExpirationTime).After(time.Now()) {
 
 			val.lastUsed = time.Now() //Update last used time
 			returnVal = val
@@ -147,8 +147,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
 					log.Printf("redirecting to: %s ", redirect.Value)
 				}else{
-					http.Redirect(w, r, config.homePage, http.StatusSeeOther)
-					log.Printf("redirecting to %s", config.homePage)
+					http.Redirect(w, r, config.HomePage, http.StatusSeeOther)
+					log.Printf("redirecting to %s", config.HomePage)
 				}
 
 				return;
@@ -185,8 +185,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
 				log.Printf("redirecting to: %s ", redirect.Value)
 			}else{
-				http.Redirect(w, r, config.homePage, http.StatusSeeOther)
-				log.Printf("redirecting to %s", config.homePage)
+				http.Redirect(w, r, config.HomePage, http.StatusSeeOther)
+				log.Printf("redirecting to %s", config.HomePage)
 			}
 
 		} else if (user == "" && pass == "") {

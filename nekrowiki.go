@@ -9,13 +9,15 @@ import (
 
 
 func _start(args []string) {
+	LoadConfiguration("nekrowiki.conf")
+
 	fs := http.FileServer(http.Dir("public_html"))
 	http.Handle("/", customErrorMW(fs))
 
 	//http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
 
 	http.Handle("/login", customErrorMW(http.HandlerFunc(loginHandler)))
-	http.Handle(config.homePage, customErrorMW(authMW(http.HandlerFunc(homepageHandler))))
+	http.Handle(config.HomePage, customErrorMW(authMW(http.HandlerFunc(homepageHandler))))
 
 	ufs := http.FileServer(http.Dir("uploads"))
 	http.Handle("/uploads/", customErrorMW(authMW(http.StripPrefix("/uploads", ufs))))
