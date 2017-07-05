@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 	"strconv"
+	"time"
 )
 
 func customErrorMW(next http.Handler) http.Handler {
@@ -64,7 +65,13 @@ func recoverHandler(next http.Handler) http.Handler {
 			}
 		}()
 
+		//TODO: remove time logging
+		t1 := time.Now()
+
 		next.ServeHTTP(w, r)
+
+		t2 := time.Now()
+		log.Printf("[%s] %q %v\n", r.Method, r.URL.String(), t2.Sub(t1))
 	}
 
 	return http.HandlerFunc(fn)
