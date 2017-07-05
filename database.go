@@ -7,9 +7,11 @@ import (
 	"time"
 	"errors"
 	"log"
+	"sync"
 )
 
 type Database struct {
+	mutex   sync.Mutex
 	session *mgo.Session
 }
 
@@ -30,6 +32,9 @@ type User struct {
 // DATABASE struct functions
 
 func (db *Database) Connect() {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	session, err := mgo.DialWithTimeout(config.DatabaseURL, 10)
 
 	if err != nil {

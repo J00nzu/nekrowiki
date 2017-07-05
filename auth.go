@@ -39,8 +39,11 @@ func createSessionCookie(w http.ResponseWriter) *sessionData{
 	data := NewSessionData()
 
 	ssMutex.Lock()
+
+	defer ssMutex.Unlock()
+
 	sessions[sesID] = data
-	ssMutex.Unlock()
+
 
 
 	http.SetCookie(w, &sessionCookie)
@@ -58,6 +61,7 @@ func cleanSessionStore(){
 	lastSessionStoreClean = time.Now()
 
 	ssMutex.Lock()
+	defer ssMutex.Unlock()
 
 	log.Println("cleaning session store...")
 	log.Println(sessions)
@@ -70,8 +74,6 @@ func cleanSessionStore(){
 
 	log.Println("cleanup complete...")
 	log.Println(sessions)
-
-	ssMutex.Unlock()
 }
 
 func getSessionCookie (w http.ResponseWriter, r *http.Request) *sessionData {
@@ -95,6 +97,8 @@ func isSessionValid(session string) (*sessionData, bool) {
 	cleanSessionStore()
 
 	ssMutex.Lock()
+	defer ssMutex.Unlock()
+
 	returnVal := &sessionData{authenticated:false}
 	valid := false
 
@@ -112,7 +116,6 @@ func isSessionValid(session string) (*sessionData, bool) {
 		log.Printf("Session %s not found.", session)
 	}
 
-	ssMutex.Unlock()
 	return returnVal, valid
 }
 
@@ -215,7 +218,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 					log.Printf("redirecting to %s", config.HomePage)
 				}
 
-				return;
+				return
 			}
 
 		}
@@ -288,4 +291,8 @@ func hashPassword(password, salt string) string {
 	//str := hex.EncodeToString(val)
 
 	return str
+}
+
+func generatePasswordSalt() string {
+	return uniuri.NewLen(16)
 }

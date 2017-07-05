@@ -5,9 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 )
 
-var database Database = Database{}
+var database Database = Database{mutex: sync.Mutex{} }
 
 
 func _start(args []string) {
