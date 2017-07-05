@@ -80,7 +80,7 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 			markdown = []byte("")
 		}
 
-		strings.Compare(string(markdown), string(markdown));
+		strings.Compare(string(markdown), string(markdown))
 		http.ServeFile(w, r, "html/edit.html")
 
 	case "POST":

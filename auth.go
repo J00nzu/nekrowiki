@@ -14,8 +14,9 @@ import (
 var unAuthenticatedURLS = []string{"favicon.ico", "/login", "*robots.txt"}
 
 type sessionData struct{
-	lastUsed time.Time
+	lastUsed      time.Time
 	authenticated bool
+	user          User
 }
 
 func NewSessionData() *sessionData {
@@ -173,31 +174,54 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		user := form.Get("username")
 		pass := form.Get("password")
 
-		if(user == "user" && pass == "pass"){
+		if (user == "" || pass == "") {
+			log.Print("login POST with empty user or pass. Assuming a derp. Redirecting to /login with 303")
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 
-			getSessionCookie(w,r).authenticated = true
+			return
+		}
 
-			redirect, err := r.Cookie("afterLogin")
-			//Redirect out of login
-			if(err == nil){
-				// expire the cookie immediately
-				redirect.Expires = time.Now().Add(- time.Hour*24)
-				http.SetCookie(w, redirect)
+		datasess := database.GetSession()
 
-				http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
-				log.Printf("redirecting to: %s ", redirect.Value)
-			}else{
-				http.Redirect(w, r, config.HomePage, http.StatusSeeOther)
-				log.Printf("redirecting to %s", config.HomePage)
+		if yes, err := datasess.UserExists(user, user); yes {
+			var userdata User
+
+			userdata, err = datasess.GetUser(user, user)
+
+			if (err != nil) {
+				panic(err);
 			}
 
-		} else if (user == "" && pass == "") {
-			log.Print("login POST with empty user and pass. Assuming a derp. Redirecting to /login with 303")
-			http.Redirect(w, r, "/login", http.StatusSeeOther);
-		} else {
-			log.Print("Wrong username or password")
-			http.Redirect(w, r, "/login", http.StatusSeeOther);
+			hashpass := hashPassword(pass, userdata.Password_Salt)
+
+			if hashpass == userdata.Password { // if password matches
+				sess := getSessionCookie(w, r)
+
+				sess.authenticated = true
+				sess.user = userdata
+
+				redirect, err := r.Cookie("afterLogin")
+
+				//Redirect out of login
+				if (err == nil) {
+					// expire the cookie immediately
+					redirect.Expires = time.Now().Add(- time.Hour * 24)
+					http.SetCookie(w, redirect)
+
+					http.Redirect(w, r, redirect.Value, http.StatusSeeOther)
+					log.Printf("redirecting to: %s ", redirect.Value)
+				} else {
+					http.Redirect(w, r, config.HomePage, http.StatusSeeOther)
+					log.Printf("redirecting to %s", config.HomePage)
+				}
+
+				return;
+			}
+
 		}
+
+		log.Print("Wrong username or password")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -253,8 +277,9 @@ func authMW(next http.Handler) http.Handler {
 	})
 }
 
-func hashPassword(password, salt []byte) string {
-	val, err := scrypt.Key(password, salt, 32768, 8, 1, 32)
+func hashPassword(password, salt string) string {
+	val, err := scrypt.Key([]byte(password), []byte(salt), 32768, 8, 1, 32)
+
 	if err != nil {
 		panic(err)
 	}
