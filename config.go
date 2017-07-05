@@ -16,6 +16,8 @@ type configValues struct {
 	SessionStoreCleanInterval time.Duration
 	AllowedQuestAccess        bool
 	DatabaseURL               string
+	DatabaseName              string
+
 }
 
 var config = DefaultConfig()
@@ -29,6 +31,8 @@ func DefaultConfig() configValues {
 	values.SessionStoreCleanInterval = time.Hour
 	values.AllowedQuestAccess = false;
 	values.DatabaseURL = "127.0.0.1:27017"
+	values.DatabaseName = "nekrowiki"
+
 
 	return values
 }

@@ -7,26 +7,32 @@ import (
 	"os"
 )
 
+var database Database = Database{}
+
 
 func _start(args []string) {
 	LoadConfiguration("nekrowiki.conf")
 
+	database.CheckDefaultUser()
+
+	os.Exit(0)
+
 	fs := http.FileServer(http.Dir("public_html"))
-	http.Handle("/", customErrorMW(fs))
+	http.Handle("/", customErrorMW(recoverHandler(fs)))
 
 	//http.Handle("/assets/", http.StripPrefix("/assets", http.FileServer(gfmstyle.Assets)))
 
-	http.Handle("/login", customErrorMW(http.HandlerFunc(loginHandler)))
-	http.Handle("/logout", customErrorMW(http.HandlerFunc(logoutHandler)))
+	http.Handle("/login", customErrorMW(recoverHandler(http.HandlerFunc(loginHandler))))
+	http.Handle("/logout", customErrorMW(recoverHandler(http.HandlerFunc(logoutHandler))))
 
-	http.Handle(config.HomePage, customErrorMW(authMW(http.HandlerFunc(homepageHandler))))
+	http.Handle(config.HomePage, customErrorMW(recoverHandler(authMW(http.HandlerFunc(homepageHandler)))))
 
 	ufs := http.FileServer(http.Dir("uploads"))
-	http.Handle("/uploads/", customErrorMW(authMW(http.StripPrefix("/uploads", ufs))))
+	http.Handle("/uploads/", customErrorMW(recoverHandler(authMW(http.StripPrefix("/uploads", ufs)))))
 
-	http.Handle("/upload", customErrorMW(authMW(http.HandlerFunc(uploadHandler))))
-	http.Handle("/md/", customErrorMW(authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler)))))
-	http.Handle("/edit/", customErrorMW(authMW(http.StripPrefix("/edit", http.HandlerFunc(editHandler)))))
+	http.Handle("/upload", customErrorMW(recoverHandler(authMW(http.HandlerFunc(uploadHandler)))))
+	http.Handle("/md/", customErrorMW(recoverHandler(authMW(http.StripPrefix("/md", http.HandlerFunc(markdownHandler))))))
+	http.Handle("/edit/", customErrorMW(recoverHandler(authMW(http.StripPrefix("/edit", http.HandlerFunc(editHandler))))))
 
 
 	log.Println("Listening...")
