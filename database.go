@@ -19,11 +19,12 @@ type DataSess struct {
 }
 
 type User struct {
-	ID       bson.ObjectId `bson:"_id,omitempty"`
-	Email    string
-	Username string
-	Password string
-	Roles    []string
+	ID            bson.ObjectId `bson:"_id,omitempty"`
+	Email         string
+	Username      string
+	Password      string
+	Password_Salt string
+	Roles         []string
 }
 
 // DATABASE struct functions
@@ -66,10 +67,11 @@ func (db *Database) CheckDefaultUser() {
 	defer ds.session.Close()
 
 	defaultUser := User{
-		Email:    "admin@example.com",
-		Username: "admin",
-		Password: "",
-		Roles:    []string{"admin"},
+		Email:         "admin@example.com",
+		Username:      "admin",
+		Password:      "3W5vxQr64mytLV1ieBc1aIZPjoCHuhs+/MyfeyZDy7Q=", // admin
+		Password_Salt: "1234",
+		Roles:         []string{"admin"},
 	}
 
 	if val, err := ds.UserExists(defaultUser.Email, defaultUser.Username); err != nil {

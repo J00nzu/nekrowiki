@@ -8,6 +8,7 @@ import (
 	"sync"
 	"path/filepath"
 	"golang.org/x/crypto/scrypt"
+	"encoding/base64"
 )
 
 var unAuthenticatedURLS = []string{"favicon.ico", "/login", "*robots.txt"}
@@ -252,10 +253,14 @@ func authMW(next http.Handler) http.Handler {
 	})
 }
 
-func hashPassword(password, salt []byte) []byte {
-	val, err := scrypt.Key(password, salt, 16384, 8, 1, 32)
+func hashPassword(password, salt []byte) string {
+	val, err := scrypt.Key(password, salt, 32768, 8, 1, 32)
 	if err != nil {
 		panic(err)
 	}
-	return val
+
+	str := base64.StdEncoding.EncodeToString([]byte(val))
+	//str := hex.EncodeToString(val)
+
+	return str
 }

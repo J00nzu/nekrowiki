@@ -15,8 +15,6 @@ func _start(args []string) {
 
 	database.CheckDefaultUser()
 
-	os.Exit(0)
-
 	fs := http.FileServer(http.Dir("public_html"))
 	http.Handle("/", customErrorMW(recoverHandler(fs)))
 
